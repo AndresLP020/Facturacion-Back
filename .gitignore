@@ -1,0 +1,16 @@
+# Dependencies and generated NestJS/Prisma output
+node_modules/
+dist/
+coverage/
+src/generated/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases, logs, and TypeScript cache
+prisma/*.db
+prisma/*.db-journal
+*.log
+*.tsbuildinfo

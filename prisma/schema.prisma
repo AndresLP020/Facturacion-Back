@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+enum PersonType {
+  MORAL
+  PHYSICAL
+}
+enum InvoiceStatus {
+  DRAFT
+  STAMPED_SIMULATED
+}
+
+model Company {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  slug String @unique
+  createdAt DateTime @default(now())
+  memberships Membership[]
+  customers Customer[]
+  invoices Invoice[]
+  ghlMappings GhlLocationMapping[]
+  auditLogs AuditLog[]
+  integrationRequests IntegrationRequest[]
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  email String @unique
+  passwordHash String
+  displayName String
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  memberships Membership[]
+  sessions Session[]
+  auditLogs AuditLog[]
+}
+
+model Membership {
+  id String @id @default(uuid()) @db.Uuid
+  companyId String @db.Uuid
+  userId String @db.Uuid
+  role Role @default(MEMBER)
+  createdAt DateTime @default(now())
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([companyId, userId])
+  @@index([userId])
+}
+
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+  tokenHash String @unique
+  csrfHash String
+  userId String @db.Uuid
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+
+model GhlLocationMapping {
+  id String @id @default(uuid()) @db.Uuid
+  locationId String @unique
+  companyId String @db.Uuid
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id String @id @default(uuid()) @db.Uuid
+  companyId String @db.Uuid
+  legalName String
+  rfc String
+  personType PersonType
+  taxRegime String
+  cfdiUse String
+  postalCode String
+  country String @default("México")
+  state String
+  municipality String
+  locality String?
+  street String?
+  externalRef String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+  @@unique([companyId, rfc])
+  @@index([companyId, legalName])
+}
+
+model Invoice {
+  id String @id @default(uuid()) @db.Uuid
+  companyId String @db.Uuid
+  customerId String @db.Uuid
+  status InvoiceStatus @default(DRAFT)
+  simulatedStampId String? @unique @db.Uuid
+  simulatedStampedAt DateTime?
+  series String?
+  folio String?
+  issuedAt DateTime
+  paymentForm String
+  paymentMethod String
+  documentType String @default("I")
+  placeOfIssue String
+  currency String @default("MXN")
+  exchangeRate Decimal @default(1) @db.Decimal(18,6)
+  notes String?
+  subtotal Decimal @db.Decimal(18,2)
+  discount Decimal @db.Decimal(18,2)
+  taxes Decimal @db.Decimal(18,2)
+  total Decimal @db.Decimal(18,2)
+  idempotencyKey String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items InvoiceItem[]
+  relations InvoiceRelation[]
+  @@unique([companyId, idempotencyKey])
+  @@index([companyId, status, createdAt])
+}
+
+model InvoiceItem {
+  id String @id @default(uuid()) @db.Uuid
+  invoiceId String @db.Uuid
+  sku String?
+  satKey String
+  description String
+  unit String
+  quantity Decimal @db.Decimal(18,4)
+  unitPrice Decimal @db.Decimal(18,4)
+  amount Decimal @db.Decimal(18,2)
+  discount Decimal @db.Decimal(18,2)
+  taxRate Decimal @db.Decimal(8,4)
+  withholdingRate Decimal @default(0) @db.Decimal(8,4)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model InvoiceRelation {
+  id String @id @default(uuid()) @db.Uuid
+  invoiceId String @db.Uuid
+  relationType String
+  reference String
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  companyId String? @db.Uuid
+  userId String? @db.Uuid
+  action String
+  resourceType String?
+  resourceId String?
+  outcome String
+  correlationId String
+  createdAt DateTime @default(now())
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([companyId, createdAt])
+  @@index([correlationId])
+}
+
+model IntegrationRequest {
+  id String @id @default(uuid()) @db.Uuid
+  companyId String? @db.Uuid
+  provider String
+  operation String
+  statusCode Int?
+  durationMs Int?
+  correlationId String
+  outcome String
+  createdAt DateTime @default(now())
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  @@index([companyId, createdAt])
+}
