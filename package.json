@@ -14,7 +14,6 @@
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
   },
   "dependencies": {
-    "@beta-aida/contracts": "*",
     "@nestjs/common": "^11.2.7",
     "@nestjs/core": "^11.2.7",
     "@nestjs/platform-express": "^11.2.7",
@@ -47,5 +46,10 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
-  "prisma": { "seed": "tsx prisma/seed.ts" }
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "overrides": {
+    "js-yaml": "5.4.3"
+  }
 }

@@ -2,7 +2,7 @@ import {
   CustomerDTO,
   CompanyDTO,
   InvoiceDTO,
-} from "@beta-aida/contracts";
+} from "../contracts";
 
 export interface ProviderContext {
   companyId: string;
