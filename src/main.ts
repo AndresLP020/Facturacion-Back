@@ -7,6 +7,7 @@ import helmet from "helmet";
 import cookieParser = require("cookie-parser");
 import { randomUUID } from "node:crypto";
 import { AppModule } from "./app.module";
+import { allowedFrontendOrigins } from "./origins";
 
 async function bootstrap() {
   const provider = process.env.INVOGO_PROVIDER || "mock";
@@ -31,10 +32,7 @@ async function bootstrap() {
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", "data:", "https:"],
-          connectSrc: [
-            "'self'",
-            process.env.FRONTEND_ORIGIN || "http://localhost:3000",
-          ],
+          connectSrc: ["'self'", ...allowedFrontendOrigins()],
           frameAncestors: ["'self'", ...ancestors],
         },
       },
@@ -47,8 +45,10 @@ async function bootstrap() {
     res.setHeader("x-correlation-id", req.correlationId);
     next();
   });
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set("trust proxy", 1);
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+    origin: allowedFrontendOrigins(),
     credentials: true,
     allowedHeaders: [
       "Content-Type",
@@ -56,7 +56,7 @@ async function bootstrap() {
       "Idempotency-Key",
       "X-Correlation-Id",
     ],
-    methods: ["GET", "POST", "PATCH", "OPTIONS"],
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS", "HEAD"],
   });
   app.setGlobalPrefix("");
   app.useGlobalPipes(

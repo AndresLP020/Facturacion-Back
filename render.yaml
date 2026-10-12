@@ -1,5 +1,5 @@
-# Demo sandbox for Render. PostgreSQL's Free plan expires after 30 days;
-# choose a paid PostgreSQL plan before creating resources if data must persist.
+# Usa este Blueprint si despliegas el repositorio `backend` por separado.
+# Si despliegas el monorepo, usa el render.yaml de la raíz.
 services:
   - type: web
     name: beta-aida-invogo-api

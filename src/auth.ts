@@ -15,6 +15,7 @@ import { Request, Response } from "express";
 import * as argon2 from "argon2";
 import { PrismaService } from "./prisma.service";
 import { LoginDto } from "./dto";
+import { isAllowedFrontendOrigin, sessionCookieOptions } from "./origins";
 
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
@@ -123,10 +124,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (
-      req.header("origin") &&
-      req.header("origin") !== process.env.FRONTEND_ORIGIN
-    )
+    if (!isAllowedFrontendOrigin(req.header("origin")))
       throw new UnauthorizedException("Origen inválido");
     let result: Awaited<ReturnType<AuthService["login"]>>;
     try {
@@ -143,14 +141,7 @@ export class AuthController {
         .catch(() => undefined);
       throw error;
     }
-    const secure = process.env.NODE_ENV === "production";
-    const common = {
-      httpOnly: true,
-      secure,
-      sameSite: secure ? ("none" as const) : ("lax" as const),
-      maxAge: Number(process.env.SESSION_TTL_HOURS || 8) * 3600_000,
-      path: "/",
-    };
+    const common = sessionCookieOptions();
     res.cookie(cookieName(), result.token, common);
     res.cookie("aida_csrf", result.csrf, { ...common, httpOnly: false });
     await this.prisma.auditLog.create({
@@ -187,8 +178,9 @@ export class AuthController {
         correlationId: req.header("x-correlation-id") || "unavailable",
       },
     });
-    res.clearCookie(cookieName(), { path: "/" });
-    res.clearCookie("aida_csrf", { path: "/" });
+    const clear = sessionCookieOptions();
+    res.clearCookie(cookieName(), clear);
+    res.clearCookie("aida_csrf", { ...clear, httpOnly: false });
     return { ok: true };
   }
 }
