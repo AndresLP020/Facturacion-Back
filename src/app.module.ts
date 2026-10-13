@@ -14,6 +14,7 @@ import {
   ParseUUIDPipe,
   ForbiddenException,
   BadRequestException,
+  UnauthorizedException,
   Injectable,
 } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
@@ -23,7 +24,9 @@ import { ThrottlerGuard } from "@nestjs/throttler";
 import { Prisma } from "@prisma/client";
 import { AuthController, AuthService, SessionGuard } from "./auth";
 import { PrismaService } from "./prisma.service";
-import { CustomerDto, DraftDto, UpdateCustomerDto } from "./dto";
+import { CustomerDto, DraftDto, GhlContextDto, UpdateCustomerDto } from "./dto";
+import { GhlIntegration } from "./integrations/ghl.integration";
+import { isAllowedFrontendOrigin } from "./origins";
 
 @Injectable()
 class BusinessService {
@@ -508,6 +511,45 @@ class ApiController {
     await this.auth.assertCanWrite(req);
     return this.service.simulateStamp(req, id);
   }
+  @Post("integrations/ghl/context") async ghlContext(
+    @Req() req: any,
+    @Body() body: GhlContextDto,
+  ) {
+    if (!isAllowedFrontendOrigin(req.header("origin")))
+      throw new UnauthorizedException("Origen inválido");
+    const correlationId = req.correlationId || randomUUID();
+    const fail = async () => {
+      await this.db.auditLog
+        .create({
+          data: {
+            action: "ghl.context.failure",
+            outcome: "failure",
+            correlationId,
+          },
+        })
+        .catch(() => undefined);
+      throw new UnauthorizedException("Contexto GHL inválido");
+    };
+    try {
+      const context = GhlIntegration.decryptUserData(body.encryptedData);
+      await this.db.auditLog.create({
+        data: {
+          action: "ghl.context.success",
+          outcome: "success",
+          correlationId,
+        },
+      });
+      return {
+        userId: context.userId,
+        activeLocation: context.activeLocation || null,
+        email: context.email || null,
+        userName: context.userName || null,
+        type: context.type || null,
+      };
+    } catch {
+      return fail();
+    }
+  }
   @Post("integrations/ghl/simulate-connectivity") @UseGuards(SessionGuard) async simulateGhlConnectivity(
     @Req() req: any,
   ) {
@@ -567,6 +609,8 @@ class ApiController {
           process.env.GHL_CLIENT_SECRET &&
           process.env.GHL_SHARED_SECRET,
         ),
+        sharedSecretConfigured: GhlIntegration.sharedSecretConfigured(),
+        appIdConfigured: Boolean(process.env.GHL_APP_ID?.trim()),
       },
       lastOperation: last,
     };

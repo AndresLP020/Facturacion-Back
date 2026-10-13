@@ -164,3 +164,10 @@ export class DraftDto {
   @ValidateNested({ each: true }) @Type(() => InvoiceRelationDto)
   relations?: InvoiceRelationDto[];
 }
+
+export class GhlContextDto {
+  @IsString()
+  @MinLength(16)
+  @MaxLength(32000)
+  encryptedData!: string;
+}

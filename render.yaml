@@ -27,6 +27,10 @@ services:
         sync: false
       - key: GHL_INTEGRATION_ENABLED
         value: "false"
+      - key: GHL_APP_ID
+        sync: false
+      - key: GHL_SHARED_SECRET
+        sync: false
       - key: ENABLE_GHL_CONNECTIVITY_SIMULATOR
         value: "true"
       - key: INVOGO_PROVIDER
