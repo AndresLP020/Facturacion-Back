@@ -31,6 +31,14 @@ services:
         sync: false
       - key: GHL_SHARED_SECRET
         sync: false
+      - key: GHL_CLIENT_ID
+        sync: false
+      - key: GHL_CLIENT_SECRET
+        sync: false
+      - key: GHL_OAUTH_REDIRECT_URI
+        value: https://facturacion-back-2n9i.onrender.com/api/v1/integrations/oauth/callback
+      - key: GHL_OAUTH_SCOPES
+        value: users.readonly
       - key: ENABLE_GHL_CONNECTIVITY_SIMULATOR
         value: "true"
       - key: INVOGO_PROVIDER

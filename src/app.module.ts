@@ -26,6 +26,7 @@ import { AuthController, AuthService, SessionGuard } from "./auth";
 import { PrismaService } from "./prisma.service";
 import { CustomerDto, DraftDto, GhlContextDto, UpdateCustomerDto } from "./dto";
 import { GhlIntegration } from "./integrations/ghl.integration";
+import { GhlOAuthController } from "./integrations/ghl-oauth.controller";
 import { isAllowedFrontendOrigin } from "./origins";
 
 @Injectable()
@@ -619,7 +620,7 @@ class ApiController {
 
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }])],
-  controllers: [AuthController, ApiController],
+  controllers: [AuthController, ApiController, GhlOAuthController],
   providers: [
     PrismaService,
     AuthService,
