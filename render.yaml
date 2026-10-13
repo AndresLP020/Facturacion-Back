@@ -28,7 +28,7 @@ services:
       - key: GHL_INTEGRATION_ENABLED
         value: "false"
       - key: ENABLE_GHL_CONNECTIVITY_SIMULATOR
-        value: "false"
+        value: "true"
       - key: INVOGO_PROVIDER
         value: mock
 

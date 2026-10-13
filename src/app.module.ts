@@ -513,10 +513,7 @@ class ApiController {
   ) {
     await this.auth.checkCsrf(req);
     await this.auth.assertCanWrite(req);
-    if (
-      process.env.NODE_ENV === "production" ||
-      process.env.ENABLE_GHL_CONNECTIVITY_SIMULATOR === "false"
-    ) {
+    if (process.env.ENABLE_GHL_CONNECTIVITY_SIMULATOR !== "true") {
       throw new NotFoundException("Prueba simulada no disponible");
     }
     const startedAt = Date.now();
@@ -564,8 +561,7 @@ class ApiController {
         implemented: false,
         enabled: false,
         localConnectivitySimulatorEnabled:
-          process.env.NODE_ENV !== "production" &&
-          process.env.ENABLE_GHL_CONNECTIVITY_SIMULATOR !== "false",
+          process.env.ENABLE_GHL_CONNECTIVITY_SIMULATOR === "true",
         configurationPresent: Boolean(
           process.env.GHL_CLIENT_ID &&
           process.env.GHL_CLIENT_SECRET &&
